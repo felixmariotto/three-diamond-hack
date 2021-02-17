@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import shaders from './shaders.js';
 
 //
 
@@ -20,18 +21,37 @@ camera.lookAt( 0, 0, 0 );
 
 //
 
-const mesh = new THREE.Mesh(
-	new THREE.BoxGeometry(),
-	new THREE.MeshNormalMaterial()
-);
+const uniforms = {};
 
-// scene.add( mesh );
+const material = new THREE.ShaderMaterial({
+	fragmentShader: shaders.fragment,
+	vertexShader: shaders.vertex,
+	uniforms,
+	transparent: true
+});
 
 //
 
 new GLTFLoader().load( './diamond.glb', (glb) => {
 
-	scene.add( glb.scene );
+	glb.scene.traverse( (obj) => {
+
+		if ( obj.material ) {
+
+			const frontMesh = obj;
+			const backMesh = obj.clone();
+
+			frontMesh.material = material;
+			backMesh.material = new THREE.MeshBasicMaterial({
+				map: new THREE.TextureLoader().load('./map.jpg'),
+				side: THREE.BackSide
+			});
+
+			scene.add( frontMesh, backMesh );
+
+		}
+
+	});
 
 });
 
