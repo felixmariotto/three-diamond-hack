@@ -1,6 +1,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 //
 
@@ -24,7 +25,15 @@ const mesh = new THREE.Mesh(
 	new THREE.MeshNormalMaterial()
 );
 
-scene.add( mesh );
+// scene.add( mesh );
+
+//
+
+new GLTFLoader().load( './diamond.glb', (glb) => {
+
+	scene.add( glb.scene );
+
+});
 
 //
 
