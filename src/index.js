@@ -43,53 +43,25 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 		if ( obj.material ) {
 
 			const frontMesh = obj;
+			const frontWireframe = obj.clone();
 			const backMesh = obj.clone();
+
+			const bb = new THREE.Box3().setFromObject( frontMesh );
+			const edge = bb.max.distanceTo( bb.min );
 
 			const posAttrib = frontMesh.geometry.attributes.position;
 
-			let newUVs = new Float32Array( posAttrib.count * 2 );
+			let scale = new Float32Array( posAttrib.count * 2 );
 
-			frontMesh.geometry.setAttribute( 'uv2', new THREE.BufferAttribute( newUVs, 2 ) );
-
-			const uv2Attrib = frontMesh.geometry.attributes.uv2;
-
-			for ( let i=0 ; i<posAttrib.count ; i+=3 ) {
-
-				const vec1 = getVectorAt( posAttrib, i, _vec1 );
-				const vec2 = getVectorAt( posAttrib, i + 1, _vec2 );
-				const vec3 = getVectorAt( posAttrib, i + 2, _vec3 );
-
-				vec1.dist = vec1.distanceTo( vec2 ) + vec1.distanceTo( vec3 );
-				vec2.dist = vec2.distanceTo( vec1 ) + vec2.distanceTo( vec3 );
-				vec3.dist = vec3.distanceTo( vec2 ) + vec3.distanceTo( vec1 );
-
-				const arr = [ vec1, vec2, vec3 ]
-				.map( (vec, id) => {
-					vec.id = id
-					return vec
-				})
-				.sort( (a,b) => a.dist - b.dist );
-
-				const baseDist = arr[1].distanceTo( arr[2] );
-				const distTo1 = arr[0].distanceTo( arr[1] );
-				const distTo2 = arr[0].distanceTo( arr[2] );
-
-				const u = distTo1 / baseDist;
-				const v = distTo2 / baseDist;
-
-				uv2Attrib.setXY( i + arr[0].id, u, v );
-				uv2Attrib.setXY( i + arr[1].id, 0, 0 );
-				uv2Attrib.setXY( i + arr[2].id, 0, 1 );
-
-			}
-
-			setTimeout( () => {
-				uv2Attrib.needsUpdate = true;
-			}, 100 )
-
-			console.log( frontMesh.geometry.attributes )
+			frontMesh.geometry.setAttribute( 'scale', new THREE.BufferAttribute( scale, 1 ) );
 
 			frontMesh.material = material;
+
+			//
+
+			frontWireframe.material = new THREE.MeshBasicMaterial({
+				wireframe: true
+			});
 
 			backMesh.material = new THREE.MeshBasicMaterial({
 				map: new THREE.TextureLoader().load('./map.jpg'),
@@ -97,21 +69,13 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 			});
 
 			scene.add( frontMesh, backMesh );
+			scene.add( frontWireframe );
 
 		}
 
 	});
 
 });
-
-//
-
-function getVectorAt( attribute, index, target ) {
-	target.x = attribute.getX( index );
-	target.y = attribute.getY( index );
-	target.z = attribute.getZ( index );
-	return target
-}
 
 //
 
