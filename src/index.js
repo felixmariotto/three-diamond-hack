@@ -8,7 +8,7 @@ import shaders from './shaders.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { LuminosityShader } from 'three/examples/jsm/shaders/LuminosityShader.js';
+import postprocessing from './postprocessing.js';
 
 //
 
@@ -26,10 +26,8 @@ const composer = new EffectComposer( renderer );
 const renderPass = new RenderPass( scene, camera );
 composer.addPass( renderPass );
 
-/*
-const luminosityPass = new ShaderPass( LuminosityShader );
-composer.addPass( luminosityPass );
-*/
+const refractionPass = new ShaderPass( postprocessing.refractionShader );
+composer.addPass( refractionPass );
 
 const controls = new OrbitControls( camera, renderer.domElement );
 camera.position.set( 0, 0, 10 );
