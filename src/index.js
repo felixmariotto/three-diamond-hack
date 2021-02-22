@@ -203,6 +203,39 @@ function getAllIndexes( islands, val ) {
 renderer.setAnimationLoop( loop );
 
 function loop() {
+
 	renderer.render( scene, camera );
+
 	controls.update();
+
+	scene.children.forEach( (child) => {
+
+		if ( child.geometry.islands ) {
+
+			computeIslandsScale( child );
+
+		}
+
+	})
+
 };
+
+//
+
+function computeIslandsScale( object ) {
+
+	const scaleAttrib = object.geometry.attributes.scale;
+
+	object.geometry.islands.forEach( (island) => {
+
+		const distToSphere = camera.position.distanceTo( island.boundingSphere.center );
+
+		const screenScale = island.boundingSphere.radius / distToSphere;
+
+		island.vertices.forEach( vertID => scaleAttrib.setX( vertID, screenScale ) );
+
+	});
+
+	scaleAttrib.needsUpdate = true;
+
+}
