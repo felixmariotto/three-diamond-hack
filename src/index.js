@@ -3,12 +3,15 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import shaders from './shaders.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+
 import postprocessing from './postprocessing.js';
+import shaders from './shaders.js';
+
 
 //
 
@@ -23,6 +26,9 @@ var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeig
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
+
+const stats = new Stats();
+document.body.appendChild( stats.dom );
 
 const composer = new EffectComposer( renderer );
 
@@ -130,8 +136,8 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 				island.boundingSphere = new THREE.Sphere();
 				_box.getBoundingSphere( island.boundingSphere );
 
-				const helper = new THREE.Box3Helper( _box, 0xffff00 );
-				scene.add( helper );
+				// const helper = new THREE.Box3Helper( _box, 0xffff00 );
+				// scene.add( helper );
 
 			});
 
@@ -314,6 +320,8 @@ function loop() {
 	//
 
 	controls.update();
+
+	stats.update();
 
 	scene.children.forEach( (child) => {
 
