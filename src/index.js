@@ -292,6 +292,35 @@ function getAllIndexes( islands, val ) {
 
 //
 
+window.addEventListener( 'resize', onWindowResize );
+
+function onWindowResize() {
+
+	const width = window.innerWidth;
+	const height = window.innerHeight;
+
+	camera.aspect = width / height;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	composer.setSize( window.innerWidth, window.innerHeight );
+
+	/*
+	cameraOrtho.left = - width / 2;
+	cameraOrtho.right = width / 2;
+	cameraOrtho.top = height / 2;
+	cameraOrtho.bottom = - height / 2;
+	cameraOrtho.updateProjectionMatrix();
+
+	
+
+	updateSpritePosition();
+	*/
+
+}
+
+//
+
 renderer.setAnimationLoop( loop );
 
 const clock = new THREE.Clock();
@@ -331,9 +360,7 @@ function loop() {
 
 		}
 
-	})
-
-	// refractionPass.uniforms.time.value = clock.getElapsedTime();
+	});
 
 };
 
