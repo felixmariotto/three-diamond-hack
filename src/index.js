@@ -26,8 +26,28 @@ const composer = new EffectComposer( renderer );
 const renderPass = new RenderPass( scene, camera );
 composer.addPass( renderPass );
 
+//
+
 const refractionPass = new ShaderPass( postprocessing.refractionShader );
 composer.addPass( refractionPass );
+
+const dpr = window.devicePixelRatio;
+const textureSize = 128 * dpr;
+const data = new Uint8Array( textureSize * textureSize * 3 );
+
+const rtTexture = new THREE.WebGLRenderTarget(
+	window.innerWidth,
+	window.innerHeight,
+	{
+		minFilter: THREE.LinearFilter,
+		magFilter: THREE.NearestFilter,
+		format: THREE.RGBFormat
+	}
+);
+
+refractionPass.uniforms["u_shiftData"].value = rtTexture.texture;
+
+//
 
 const controls = new OrbitControls( camera, renderer.domElement );
 camera.position.set( 0, 0, 10 );
@@ -263,11 +283,19 @@ function getAllIndexes( islands, val ) {
 
 renderer.setAnimationLoop( loop );
 
+const clock = new THREE.Clock();
+
 function loop() {
+
+	renderer.setRenderTarget( rtTexture );
+	renderer.clear();
+	renderer.render( scene, camera );
+
+	//
 
 	composer.render();
 
-	// renderer.render( scene, camera );
+	//
 
 	controls.update();
 
@@ -280,6 +308,8 @@ function loop() {
 		}
 
 	})
+
+	// refractionPass.uniforms.time.value = clock.getElapsedTime();
 
 };
 
