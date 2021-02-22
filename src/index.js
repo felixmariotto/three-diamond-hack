@@ -5,6 +5,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import shaders from './shaders.js';
 
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { LuminosityShader } from 'three/examples/jsm/shaders/LuminosityShader.js';
+
 //
 
 var scene = new THREE.Scene();
@@ -12,9 +17,19 @@ scene.background = new THREE.Color( 0x505050 );
 
 var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 
-var renderer = new THREE.WebGLRenderer({ antialias: true });
+var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
+
+const composer = new EffectComposer( renderer );
+
+const renderPass = new RenderPass( scene, camera );
+composer.addPass( renderPass );
+
+/*
+const luminosityPass = new ShaderPass( LuminosityShader );
+composer.addPass( luminosityPass );
+*/
 
 const controls = new OrbitControls( camera, renderer.domElement );
 camera.position.set( 0, 0, 10 );
@@ -53,6 +68,7 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 			frontMesh.geometry.deleteAttribute( 'uv' );
 
 			frontMesh.geometry = parseGeometryIslands( frontMesh.geometry );
+			frontMesh.geometry.computeVertexNormals();
 
 			frontMesh.geometry.computeBoundingBox();
 			const baseBB = frontMesh.geometry.boundingBox;
@@ -204,7 +220,9 @@ renderer.setAnimationLoop( loop );
 
 function loop() {
 
-	renderer.render( scene, camera );
+	composer.render();
+
+	// renderer.render( scene, camera );
 
 	controls.update();
 
