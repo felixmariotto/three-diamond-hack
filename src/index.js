@@ -64,6 +64,17 @@ camera.lookAt( 0, 0, 0 );
 
 //
 
+const sphere1 = new THREE.Mesh(
+	new THREE.IcosahedronGeometry( 1, 5 ),
+	new THREE.MeshNormalMaterial()
+);
+
+// sphere1.layers.set( 2 );
+
+scene.add( sphere1 );
+
+//
+
 const uniforms = {};
 
 const material = new THREE.ShaderMaterial({
@@ -327,6 +338,10 @@ const clock = new THREE.Clock();
 
 function loop() {
 
+	// STEP 1 : Render image shifting information in a render target.
+	// this shifting is used to mimic refraction, and only applies
+	// to object in layer 1, the gems front faces.
+
 	// so that background data in refraction shader is empty
 	scene.background = black;
 
@@ -337,7 +352,9 @@ function loop() {
 	renderer.clear();
 	renderer.render( scene, camera );
 
-	//
+	// STEP 2 : Render with composer. First render every object but the
+	// gems front faces, then use the previous render target information
+	// to shift parts of this render.
 
 	scene.background = backgroundColor;
 
