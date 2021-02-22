@@ -49,12 +49,15 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			let scale = new Float32Array( posAttrib.count * 2 );
 
-			frontMesh.geometry.setAttribute( 'scale', new THREE.BufferAttribute( scale, 1 ) );
-
-			frontMesh.material = material;
+			frontMesh.geometry.deleteAttribute( 'normal' );
+			frontMesh.geometry.deleteAttribute( 'uv' );
 
 			frontMesh.geometry = parseGeometryIslands( frontMesh.geometry );
 
+			frontMesh.geometry.setAttribute( 'scale', new THREE.BufferAttribute( scale, 1 ) );
+
+			frontMesh.material = material;
+			
 			//
 
 			backMesh.material = new THREE.MeshBasicMaterial({
@@ -74,9 +77,7 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 function parseGeometryIslands( geometry ) {
 
-	if ( !geometry.index ) {
-		geometry = BufferGeometryUtils.mergeVertices( geometry );
-	}
+	geometry = BufferGeometryUtils.mergeVertices( geometry );
 
 	geometry.islands = [];
 
@@ -85,25 +86,24 @@ function parseGeometryIslands( geometry ) {
 	const triVec3 = new THREE.Vector3();
 	const _vec = new THREE.Vector3();
 	let a, b, c, islandID;
+	let islandIDs;
 
 	const index = geometry.index;
 
 	for ( let i=0 ; i<index.count - 3 ; i+=3 ) {
 
+		// get face vertex indices
 		a = index.array[ i ];
 		b = index.array[ i + 1 ];
 		c = index.array[ i + 2 ];
 
-		// get id of the island including one of the vertices
-		islandID = geometry.islands.findIndex( (island) => {
-			return (
-				island.vertices.includes( a ) ||
-				island.vertices.includes( b ) ||
-				island.vertices.includes( c )
-			)
-		});
+		islandIDs = getAllIndexes( geometry.islands, a );
+		islandIDs = islandIDs.concat( getAllIndexes( geometry.islands, b ) );
+		islandIDs = islandIDs.concat( getAllIndexes( geometry.islands, c ) );
 
-		if ( islandID < 0 ) {
+		islandIDs = [ ...new Set(islandIDs) ];
+
+		if ( !islandIDs.length ) {
 
 			// create new island
 			geometry.islands.push(
@@ -112,55 +112,37 @@ function parseGeometryIslands( geometry ) {
 
 		} else {
 
+			const baseIsland = geometry.islands[ islandIDs[0] ];
+
+			// merge islands
+			for ( let i=1 ; i<islandIDs.length ; i++ ) {
+
+				const vertsBase = baseIsland.vertices;
+				const vertsToMerge = geometry.islands[ islandIDs[i] ].vertices;
+
+				baseIsland.vertices = [ ...new Set([ ...vertsBase, ...vertsToMerge ]) ];
+
+			}
+
+			geometry.islands = geometry.islands.filter( (island, idx) => {
+				if ( islandIDs.includes(idx) && idx !== islandIDs[0] ) return false
+				else return true
+			});
+
 			// add vertices to island if necessary
 			[ a, b, c ].forEach( (vertIndex) => {
 
-				if ( !geometry.islands[ islandID ].vertices.includes( vertIndex ) ) {
+				if ( !baseIsland.vertices.includes( vertIndex ) ) {
 
-					geometry.islands[ islandID ].vertices.push( vertIndex );
+					baseIsland.vertices.push( vertIndex );
 
 				}
 
-			})
-			
+			});
 
 		}
 
 	}
-
-	// merge islands
-	( function recursiveMergeIslands() {
-
-		let baseIslandVerts, testIslandVerts;
-
-		for ( let i=0 ; i<geometry.islands.length ; i++ ) {
-
-			for ( let j=i+1 ; j<geometry.islands.length ; j++ ) {
-
-				baseIslandVerts = geometry.islands[ i ].vertices;
-				testIslandVerts = geometry.islands[ j ].vertices;
-
-				if ( baseIslandVerts.some( r => testIslandVerts.indexOf(r) >= 0 ) ) {
-					
-					// then merge the islands and call this function again
-
-					baseIslandVerts = baseIslandVerts.concat( testIslandVerts );
-
-					baseIslandVerts = baseIslandVerts.concat( testIslandVerts.filter( (item) => {
-						baseIslandVerts.indexOf(item) < 0
-					}));
-
-					geometry.islands.splice( j, 1 );
-
-					recursiveMergeIslands();
-
-				}
-
-			}
-
-		}
-
-	})()
 
 	console.log( geometry );
 
@@ -176,3 +158,17 @@ function loop() {
 	renderer.render( scene, camera );
 	controls.update();
 };
+
+//
+
+function getAllIndexes( islands, val ) {
+
+	return islands.reduce( ( accu, island, i ) => {
+
+		if ( island.vertices.includes(val) ) accu.push( i );
+		
+		return accu
+
+	}, [] );
+
+}
