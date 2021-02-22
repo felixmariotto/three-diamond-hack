@@ -25,12 +25,16 @@ const refractionShader = {
 
 		void main() {
 
-			vec4 texel = texture2D( tDiffuse, vUv );
-			vec4 inputTexel = opacity * texel;
-
 			vec3 shiftData = texture2D( u_shiftData, vUv ).xyz;
 
-			gl_FragColor = vec4( vec3( shiftData.x, 1.0, 1.0 ), 1.0 );
+			vec2 shift = vec2( shiftData.x * 2.0 - 1.0, shiftData.y * 2.0 - 1.0 );
+			shift *= shiftData.z * -0.2;
+
+			vec2 uv = vUv + shift;
+
+			vec4 texel = texture2D( tDiffuse, uv );
+
+			gl_FragColor = texel;
 		}
 	`
 

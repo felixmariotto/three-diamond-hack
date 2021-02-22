@@ -12,8 +12,11 @@ import postprocessing from './postprocessing.js';
 
 //
 
+const backgroundColor = new THREE.Color( 0x505050 );
+const black = new THREE.Color( 0x00 );
+
 var scene = new THREE.Scene();
-scene.background = new THREE.Color( 0x505050 );
+scene.background = backgroundColor;
 
 var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 
@@ -74,6 +77,8 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			const frontMesh = obj;
 			const backMesh = obj.clone();
+
+			frontMesh.layers.set(1);
 
 			const bb = new THREE.Box3().setFromObject( frontMesh );
 			const edge = bb.max.distanceTo( bb.min );
@@ -287,11 +292,22 @@ const clock = new THREE.Clock();
 
 function loop() {
 
+	// so that background data in refraction shader is empty
+	scene.background = black;
+
+	camera.layers.disableAll();
+	camera.layers.enable( 1 );
+
 	renderer.setRenderTarget( rtTexture );
 	renderer.clear();
 	renderer.render( scene, camera );
 
 	//
+
+	scene.background = backgroundColor;
+
+	camera.layers.disableAll();
+	camera.layers.enable( 0 );
 
 	composer.render();
 
