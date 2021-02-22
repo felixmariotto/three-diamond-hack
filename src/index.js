@@ -64,28 +64,32 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			let scale = new Float32Array( posAttrib.count );
 
-			frontMesh.geometry.deleteAttribute( 'normal' );
-			frontMesh.geometry.deleteAttribute( 'uv' );
+			let dummyGeom = frontMesh.geometry.clone();
 
-			frontMesh.geometry = parseGeometryIslands( frontMesh.geometry );
-			frontMesh.geometry.computeVertexNormals();
+			dummyGeom.deleteAttribute( 'normal' );
+			dummyGeom.deleteAttribute( 'uv' );
+
+			dummyGeom = parseGeometryIslands( dummyGeom );
+			// frontMesh.geometry.computeVertexNormals();
 
 			frontMesh.geometry.computeBoundingBox();
 			const baseBB = frontMesh.geometry.boundingBox;
 			const baseSize = baseBB.min.distanceTo( baseBB.max );
 
-			// const _box = new THREE.Box3();
 			const _vec = new THREE.Vector3();
+			const _vec2 = new THREE.Vector3();
+
+			frontMesh.geometry.islands = [];
 
 			// expand box 
-			frontMesh.geometry.islands.forEach( (island) => {
+			dummyGeom.islands.forEach( (island) => {
 
 				const _box = new THREE.Box3();
 
 				const vertices = island.vertices;
 
 				// initialize box
-				_vec.fromBufferAttribute( frontMesh.geometry.attributes.position, vertices[0] );
+				_vec.fromBufferAttribute( dummyGeom.attributes.position, vertices[0] );
 				frontMesh.localToWorld( _vec );
 
 				_box.min.copy( _vec );
@@ -93,7 +97,7 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 				for ( let i=1 ; i<vertices.length ; i++ ) {
 
-					_vec.fromBufferAttribute( frontMesh.geometry.attributes.position, vertices[i] );
+					_vec.fromBufferAttribute( dummyGeom.attributes.position, vertices[i] );
 					frontMesh.localToWorld( _vec );
 
 					_box.expandByPoint( _vec );
@@ -108,7 +112,50 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			});
 
-			console.log( frontMesh.geometry )
+			// create the islands in the real geometry
+
+			const dummyToGeomIndex = [];
+
+			for ( let i=0 ; i<posAttrib.count ; i++ ) {
+
+				_vec.fromBufferAttribute( posAttrib, i );
+
+				for ( let j=0 ; j<dummyGeom.attributes.position.count ; j++ ) {
+
+					_vec2.fromBufferAttribute( dummyGeom.attributes.position, j );
+
+					if ( _vec.distanceTo( _vec2 ) < 1e-4 ) {
+
+						dummyToGeomIndex[ j ] = dummyToGeomIndex[ j ] || [];
+
+						dummyToGeomIndex[ j ].push( i );
+
+					}
+
+				}
+
+			}
+
+			frontMesh.geometry.islands = [];
+
+			dummyGeom.islands.forEach( (originIsland) => {
+
+				const newIsland = {
+					vertices: [],
+					boundingSphere: originIsland.boundingSphere.clone()
+				};
+
+				originIsland.vertices.forEach( (vertID) => {
+
+					newIsland.vertices = newIsland.vertices.concat( dummyToGeomIndex[vertID] );
+
+				});
+
+				frontMesh.geometry.islands.push( newIsland );
+
+			});
+
+			//
 
 			frontMesh.geometry.setAttribute( 'scale', new THREE.BufferAttribute( scale, 1 ) );
 

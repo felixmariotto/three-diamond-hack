@@ -29,10 +29,10 @@ fragment: `
 
 	void main() {
 
-		vec2 screenDir = normalize( vec2( vNormal.x, vNormal.y ) );
+		vec3 normal = normalize( vNormal ) * 0.5 + 0.5;
 
-		vec3 normal = normalize( vNormal );
-		// float camAngle = dot( normal, vec3( 0, 0, 1 ) );
+		vec2 screenDir = vec2( normal.x, normal.y );
+
 		gl_FragColor = vec4( vec3( screenDir, vScale ), 1.0 );
 
 		// gl_FragColor = vec4( vec3( vScale ), 1.0 );
