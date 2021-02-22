@@ -47,12 +47,52 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			const posAttrib = frontMesh.geometry.attributes.position;
 
-			let scale = new Float32Array( posAttrib.count * 2 );
+			let scale = new Float32Array( posAttrib.count );
 
 			frontMesh.geometry.deleteAttribute( 'normal' );
 			frontMesh.geometry.deleteAttribute( 'uv' );
 
 			frontMesh.geometry = parseGeometryIslands( frontMesh.geometry );
+
+			frontMesh.geometry.computeBoundingBox();
+			const baseBB = frontMesh.geometry.boundingBox;
+			const baseSize = baseBB.min.distanceTo( baseBB.max );
+
+			// const _box = new THREE.Box3();
+			const _vec = new THREE.Vector3();
+
+			// expand box 
+			frontMesh.geometry.islands.forEach( (island) => {
+
+				const _box = new THREE.Box3();
+
+				const vertices = island.vertices;
+
+				// initialize box
+				_vec.fromBufferAttribute( frontMesh.geometry.attributes.position, vertices[0] );
+				frontMesh.localToWorld( _vec );
+
+				_box.min.copy( _vec );
+				_box.max.copy( _vec );
+
+				for ( let i=1 ; i<vertices.length ; i++ ) {
+
+					_vec.fromBufferAttribute( frontMesh.geometry.attributes.position, vertices[i] );
+					frontMesh.localToWorld( _vec );
+
+					_box.expandByPoint( _vec );
+
+				}
+
+				island.boundingSphere = new THREE.Sphere();
+				_box.getBoundingSphere( island.boundingSphere );
+
+				const helper = new THREE.Box3Helper( _box, 0xffff00 );
+				scene.add( helper );
+
+			});
+
+			console.log( frontMesh.geometry )
 
 			frontMesh.geometry.setAttribute( 'scale', new THREE.BufferAttribute( scale, 1 ) );
 
@@ -81,11 +121,7 @@ function parseGeometryIslands( geometry ) {
 
 	geometry.islands = [];
 
-	const triVec1 = new THREE.Vector3();
-	const triVec2 = new THREE.Vector3();
-	const triVec3 = new THREE.Vector3();
-	const _vec = new THREE.Vector3();
-	let a, b, c, islandID;
+	let a, b, c;
 	let islandIDs;
 
 	const index = geometry.index;
@@ -144,20 +180,9 @@ function parseGeometryIslands( geometry ) {
 
 	}
 
-	console.log( geometry );
-
 	return geometry
 
 }
-
-//
-
-renderer.setAnimationLoop( loop );
-
-function loop() {
-	renderer.render( scene, camera );
-	controls.update();
-};
 
 //
 
@@ -172,3 +197,12 @@ function getAllIndexes( islands, val ) {
 	}, [] );
 
 }
+
+//
+
+renderer.setAnimationLoop( loop );
+
+function loop() {
+	renderer.render( scene, camera );
+	controls.update();
+};
