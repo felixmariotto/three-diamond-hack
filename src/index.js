@@ -5,8 +5,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
-import shaders from './shaders.js';
-
+import shiftShaders from './shiftShaders.js';
+import gemFrontShaders from './gemFrontShaders.js';
 
 //
 
@@ -71,8 +71,8 @@ scene.add( sphere1 );
 const uniforms = {};
 
 const material = new THREE.ShaderMaterial({
-	fragmentShader: shaders.fragment,
-	vertexShader: shaders.vertex,
+	fragmentShader: shiftShaders.fragment,
+	vertexShader: shiftShaders.vertex,
 	uniforms,
 	transparent: true
 });
@@ -204,22 +204,8 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 			});
 
 			frontMesh2.material = new THREE.ShaderMaterial({
-				vertexShader: `
-					varying vec2 vUv;
-
-					void main() {
-						vUv = uv;
-						vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-						gl_Position = projectionMatrix * mvPosition;
-					}
-				`,
-				fragmentShader: `
-					varying vec2 vUv;
-
-					void main() {
-						gl_FragColor = vec4( vUv.x, vUv.y, 1.0, 1.0 );
-					}
-				`
+				vertexShader: gemFrontShaders.vertex,
+				fragmentShader: gemFrontShaders.fragment
 			});
 
 			scene.add( frontMesh, backMesh, frontMesh2 );
