@@ -9,8 +9,9 @@ vertex: `
 
 	void main() {
 		vUv = uv;
-		// vec3 pos = position + ( islandCenter * 0.1 );
-		vec3 pos = position;
+		vec3 scaleDir = ( position - islandCenter ) * -1.0;
+		vec3 pos = position + ( scaleDir * 0.25 );
+		// vec3 pos = position;
 		vec4 v = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );
 		vCoords.x = ( v.x / v.z ) * 0.5 + 0.5;
 		vCoords.y = ( v.y / v.z ) * 0.5 + 0.5;
@@ -36,6 +37,7 @@ fragment: `
 		vec4 texel = texture2D( u_gemsBackRT, uv );
 
 		gl_FragColor = texel;
+		// gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
 	}
 `
 

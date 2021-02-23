@@ -16,7 +16,7 @@ const black = new THREE.Color( 0x00 );
 var scene = new THREE.Scene();
 scene.background = backgroundColor;
 
-var camera = new THREE.PerspectiveCamera( 90, window.innerWidth/window.innerHeight, 0.1, 1000 );
+var camera = new THREE.PerspectiveCamera( 70, window.innerWidth/window.innerHeight, 0.1, 1000 );
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -79,7 +79,18 @@ const material = new THREE.ShaderMaterial({
 
 //
 
-new GLTFLoader().load( './diamond.glb', (glb) => {
+const url = './diamond.glb';
+// const url = './diamond-more.glb';
+
+new GLTFLoader().load( url, (glb) => {
+
+	/*
+	glb.scene.traverse( (obj) => {
+		if ( obj.material ) obj.material = new THREE.MeshNormalMaterial();
+	})
+	scene.add( glb.scene );
+	return
+	*/
 
 	glb.scene.traverse( (obj) => {
 
@@ -190,6 +201,8 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			frontMesh.geometry.islands.forEach( (island) => {
 
+				// console.log('island', island)
+
 				island.vertices.forEach( (vertID) => {
 
 					islandCenterAttrib.setXYZ(
@@ -204,6 +217,8 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 			});
 
 			frontMesh.geometry.setAttribute( 'islandCenter', islandCenterAttrib );
+
+			// console.log('geometry', frontMesh.geometry)
 
 			//
 
@@ -359,7 +374,10 @@ function loop() {
 
 	scene.children.forEach( (child) => {
 
-		if ( child.geometry.islands ) {
+		if (
+			child.geometry &&
+			child.geometry.islands
+		) {
 
 			computeIslandsScale( child );
 
