@@ -29,6 +29,8 @@ vertex: `
 `,
 
 fragment: `
+	#define gemSamplingZoom 0.15
+
 	varying vec2 vUv;
 	varying vec2 vCoords;
 	varying vec2 cCoords;
@@ -42,7 +44,9 @@ fragment: `
 		vec2 shift = vec2( shiftData.x * 2.0 - 1.0, shiftData.y * 2.0 - 1.0 );
 		shift *= shiftData.z * -0.2;
 
-		vec2 uv = ( ( vCoords + cCoords ) / 2.0 ) + shift;
+		vec2 zoomedCoords = ( vCoords * gemSamplingZoom ) + ( cCoords * ( 1.0 - gemSamplingZoom ) );
+
+		vec2 uv = zoomedCoords; // + shift;
 
 		vec4 texel = texture2D( u_gemsBackRT, uv );
 

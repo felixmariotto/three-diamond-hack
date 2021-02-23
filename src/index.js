@@ -7,6 +7,7 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import shiftShaders from './shiftShaders.js';
 import gemFrontShaders from './gemFrontShaders.js';
+import gemBackShaders from './gemBackShaders.js';
 
 //
 
@@ -27,10 +28,6 @@ document.body.appendChild( stats.dom );
 
 //
 
-const dpr = window.devicePixelRatio;
-const textureSize = 128 * dpr;
-const data = new Uint8Array( textureSize * textureSize * 3 );
-
 const shiftingRenderTarget = new THREE.WebGLRenderTarget(
 	window.innerWidth,
 	window.innerHeight,
@@ -42,8 +39,8 @@ const shiftingRenderTarget = new THREE.WebGLRenderTarget(
 );
 
 const gemsBackRenderTarget = new THREE.WebGLRenderTarget(
-	window.innerWidth,
-	window.innerHeight,
+	window.innerWidth * 3,
+	window.innerHeight * 3,
 	{
 		minFilter: THREE.LinearFilter,
 		magFilter: THREE.NearestFilter,
@@ -236,8 +233,19 @@ new GLTFLoader().load( url, (glb) => {
 			backMesh.layers.set(2);
 			frontMesh2.layers.set(3);
 
+			/*
 			backMesh.material = new THREE.MeshBasicMaterial({
 				map: new THREE.TextureLoader().load('./map.jpg'),
+				side: THREE.BackSide
+			});
+			*/
+
+			backMesh.material = new THREE.ShaderMaterial({
+				vertexShader: gemBackShaders.vertex,
+				fragmentShader: gemBackShaders.fragment,
+				uniforms: {
+					'u_map': { value: new THREE.TextureLoader().load('./map.jpg') }
+				},
 				side: THREE.BackSide
 			});
 

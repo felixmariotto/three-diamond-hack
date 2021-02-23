@@ -17,8 +17,6 @@ vertex: `
 `,
 
 fragment: `
-	#extension GL_OES_standard_derivatives : enable
-
 	varying vec3 vNormal;
 	varying float vScale;
 
