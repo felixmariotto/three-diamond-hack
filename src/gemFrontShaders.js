@@ -2,12 +2,16 @@
 export default {
 
 vertex: `
+	attribute vec3 islandCenter;
+
 	varying vec2 vUv;
 	varying vec2 vCoords;
 
 	void main() {
 		vUv = uv;
-		vec4 v = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+		// vec3 pos = position + ( islandCenter * 0.1 );
+		vec3 pos = position;
+		vec4 v = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );
 		vCoords.x = ( v.x / v.z ) * 0.5 + 0.5;
 		vCoords.y = ( v.y / v.z ) * 0.5 + 0.5;
 		gl_Position = v;

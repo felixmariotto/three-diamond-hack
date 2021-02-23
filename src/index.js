@@ -16,7 +16,7 @@ const black = new THREE.Color( 0x00 );
 var scene = new THREE.Scene();
 scene.background = backgroundColor;
 
-var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+var camera = new THREE.PerspectiveCamera( 90, window.innerWidth/window.innerHeight, 0.1, 1000 );
 
 var renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -86,19 +86,13 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 		if ( obj.material ) {
 
 			const frontMesh = obj;
-			const backMesh = obj.clone();
-			const frontMesh2 = obj.clone();
-
+			
 			frontMesh.layers.set(1);
-			backMesh.layers.set(2);
-			frontMesh2.layers.set(3);
 
 			const bb = new THREE.Box3().setFromObject( frontMesh );
 			const edge = bb.max.distanceTo( bb.min );
 
 			const posAttrib = frontMesh.geometry.attributes.position;
-
-			let scale = new Float32Array( posAttrib.count );
 
 			let dummyGeom = frontMesh.geometry.clone();
 
@@ -190,13 +184,42 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			});
 
+			// add island center attribute
+
+			const islandCenterAttrib = new THREE.BufferAttribute( new Float32Array( posAttrib.count * 3 ), 3 )
+
+			frontMesh.geometry.islands.forEach( (island) => {
+
+				island.vertices.forEach( (vertID) => {
+
+					islandCenterAttrib.setXYZ(
+						vertID,
+						island.boundingSphere.center.x,
+						island.boundingSphere.center.y,
+						island.boundingSphere.center.z
+					);
+
+				});
+
+			});
+
+			frontMesh.geometry.setAttribute( 'islandCenter', islandCenterAttrib );
+
 			//
+
+			let scale = new Float32Array( posAttrib.count );
 
 			frontMesh.geometry.setAttribute( 'scale', new THREE.BufferAttribute( scale, 1 ) );
 
 			frontMesh.material = material;
 			
 			//
+
+			const backMesh = obj.clone();
+			const frontMesh2 = obj.clone();
+			
+			backMesh.layers.set(2);
+			frontMesh2.layers.set(3);
 
 			backMesh.material = new THREE.MeshBasicMaterial({
 				map: new THREE.TextureLoader().load('./map.jpg'),
