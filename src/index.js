@@ -91,7 +91,7 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			frontMesh.layers.set(1);
 			backMesh.layers.set(2);
-			backMesh.layers.set(3);
+			frontMesh2.layers.set(3);
 
 			const bb = new THREE.Box3().setFromObject( frontMesh );
 			const edge = bb.max.distanceTo( bb.min );
@@ -205,7 +205,11 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			frontMesh2.material = new THREE.ShaderMaterial({
 				vertexShader: gemFrontShaders.vertex,
-				fragmentShader: gemFrontShaders.fragment
+				fragmentShader: gemFrontShaders.fragment,
+				uniforms: {
+					'u_shiftRT': { value: shiftingRenderTarget.texture },
+					'u_gemsBackRT': { value: gemsBackRenderTarget.texture },
+				}
 			});
 
 			scene.add( frontMesh, backMesh, frontMesh2 );
@@ -328,6 +332,18 @@ let originalRT;
 
 function loop() {
 
+	// update scale attribute
+
+	scene.children.forEach( (child) => {
+
+		if ( child.geometry.islands ) {
+
+			computeIslandsScale( child );
+
+		}
+
+	});
+
 	// STEP 1 : Render image shifting information in a render target.
 	// this shifting is used to mimic refraction, and only applies
 	// to object in layer 1, the gems front faces.
@@ -371,16 +387,6 @@ function loop() {
 	controls.update();
 
 	stats.update();
-
-	scene.children.forEach( (child) => {
-
-		if ( child.geometry.islands ) {
-
-			computeIslandsScale( child );
-
-		}
-
-	});
 
 };
 
