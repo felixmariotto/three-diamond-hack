@@ -5,11 +5,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { BufferGeometryUtils } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-
-import postprocessing from './postprocessing.js';
 import shaders from './shaders.js';
 
 
@@ -30,21 +25,13 @@ document.body.appendChild( renderer.domElement );
 const stats = new Stats();
 document.body.appendChild( stats.dom );
 
-const composer = new EffectComposer( renderer );
-
-const renderPass = new RenderPass( scene, camera );
-composer.addPass( renderPass );
-
 //
-
-const refractionPass = new ShaderPass( postprocessing.refractionShader );
-composer.addPass( refractionPass );
 
 const dpr = window.devicePixelRatio;
 const textureSize = 128 * dpr;
 const data = new Uint8Array( textureSize * textureSize * 3 );
 
-const rtTexture = new THREE.WebGLRenderTarget(
+const shiftingRenderTarget = new THREE.WebGLRenderTarget(
 	window.innerWidth,
 	window.innerHeight,
 	{
@@ -54,7 +41,15 @@ const rtTexture = new THREE.WebGLRenderTarget(
 	}
 );
 
-refractionPass.uniforms["u_shiftData"].value = rtTexture.texture;
+const gemsBackRenderTarget = new THREE.WebGLRenderTarget(
+	window.innerWidth,
+	window.innerHeight,
+	{
+		minFilter: THREE.LinearFilter,
+		magFilter: THREE.NearestFilter,
+		format: THREE.RGBFormat
+	}
+);
 
 //
 
@@ -68,8 +63,6 @@ const sphere1 = new THREE.Mesh(
 	new THREE.IcosahedronGeometry( 1, 5 ),
 	new THREE.MeshNormalMaterial()
 );
-
-// sphere1.layers.set( 2 );
 
 scene.add( sphere1 );
 
@@ -94,8 +87,11 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 
 			const frontMesh = obj;
 			const backMesh = obj.clone();
+			const frontMesh2 = obj.clone();
 
 			frontMesh.layers.set(1);
+			backMesh.layers.set(2);
+			backMesh.layers.set(3);
 
 			const bb = new THREE.Box3().setFromObject( frontMesh );
 			const edge = bb.max.distanceTo( bb.min );
@@ -110,7 +106,6 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 			dummyGeom.deleteAttribute( 'uv' );
 
 			dummyGeom = parseGeometryIslands( dummyGeom );
-			// frontMesh.geometry.computeVertexNormals();
 
 			frontMesh.geometry.computeBoundingBox();
 			const baseBB = frontMesh.geometry.boundingBox;
@@ -208,7 +203,26 @@ new GLTFLoader().load( './diamond.glb', (glb) => {
 				side: THREE.BackSide
 			});
 
-			scene.add( frontMesh, backMesh );
+			frontMesh2.material = new THREE.ShaderMaterial({
+				vertexShader: `
+					varying vec2 vUv;
+
+					void main() {
+						vUv = uv;
+						vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+						gl_Position = projectionMatrix * mvPosition;
+					}
+				`,
+				fragmentShader: `
+					varying vec2 vUv;
+
+					void main() {
+						gl_FragColor = vec4( vUv.x, vUv.y, 1.0, 1.0 );
+					}
+				`
+			});
+
+			scene.add( frontMesh, backMesh, frontMesh2 );
 
 		}
 
@@ -316,18 +330,6 @@ function onWindowResize() {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	composer.setSize( window.innerWidth, window.innerHeight );
 
-	/*
-	cameraOrtho.left = - width / 2;
-	cameraOrtho.right = width / 2;
-	cameraOrtho.top = height / 2;
-	cameraOrtho.bottom = - height / 2;
-	cameraOrtho.updateProjectionMatrix();
-
-	
-
-	updateSpritePosition();
-	*/
-
 }
 
 //
@@ -335,6 +337,8 @@ function onWindowResize() {
 renderer.setAnimationLoop( loop );
 
 const clock = new THREE.Clock();
+
+let originalRT;
 
 function loop() {
 
@@ -348,20 +352,33 @@ function loop() {
 	camera.layers.disableAll();
 	camera.layers.enable( 1 );
 
-	renderer.setRenderTarget( rtTexture );
+	originalRT = renderer.getRenderTarget();
+
+	renderer.setRenderTarget( shiftingRenderTarget );
 	renderer.clear();
 	renderer.render( scene, camera );
 
-	// STEP 2 : Render with composer. First render every object but the
-	// gems front faces, then use the previous render target information
-	// to shift parts of this render.
+	// STEP 2 : Render gemstones backfaces only, to be used later by the
+	// front faces material.
 
-	scene.background = backgroundColor;
+	camera.layers.disableAll();
+	camera.layers.enable( 2 );
+
+	renderer.setRenderTarget( gemsBackRenderTarget );
+	renderer.clear();
+	renderer.render( scene, camera );
+
+	// STEP 3 : Render all objects, including gemstones which are
+	// displayed with a shader material using the two previous
+	// render targets.
 
 	camera.layers.disableAll();
 	camera.layers.enable( 0 );
+	camera.layers.enable( 3 );
 
-	composer.render();
+	renderer.setRenderTarget( originalRT );
+	renderer.clear();
+	renderer.render( scene, camera );
 
 	//
 
