@@ -15,16 +15,14 @@ vertex: `
 		vUv = uv;
 
 		vec4 v = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-		vCoords.x = ( v.x / v.z ) * 0.5 + 0.5;
-		vCoords.y = ( v.y / v.z ) * 0.5 + 0.5;
+		vCoords = v.xy;
+		vCoords /= v.w;
+		vCoords = vCoords * 0.5 + 0.5;
 
 		vec4 c = projectionMatrix * modelViewMatrix * vec4( islandCenter, 1.0 );
-		cCoords.x = ( c.x / c.z ) * 0.5 + 0.5;
-		cCoords.y = ( c.y / c.z ) * 0.5 + 0.5;
-
-		test = v.xy;
-		test /= v.w;
-		test = test * 0.5 + 0.5;
+		cCoords = c.xy;
+		cCoords /= c.w;
+		cCoords = cCoords * 0.5 + 0.5;
 
 		gl_Position = v;
 
@@ -37,8 +35,6 @@ fragment: `
 	varying vec2 vUv;
 	varying vec2 vCoords;
 	varying vec2 cCoords;
-
-	varying vec2 test;
 
 	uniform sampler2D u_shiftRT;
 	uniform sampler2D u_gemsBackRT;
@@ -56,12 +52,7 @@ fragment: `
 
 		vec4 texel = texture2D( u_gemsBackRT, uv );
 
-		vec2 coords = test * 10.0;
-		coords = fract( coords );
-
-		// gl_FragColor = texel;
-		// gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
-		gl_FragColor = vec4( coords, 0.0, 1.0 );
+		gl_FragColor = texel;
 	}
 `
 
