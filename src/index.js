@@ -65,17 +65,6 @@ scene.add( sphere1 );
 
 //
 
-const uniforms = {};
-
-const material = new THREE.ShaderMaterial({
-	fragmentShader: shiftShaders.fragment,
-	vertexShader: shiftShaders.vertex,
-	uniforms,
-	transparent: true
-});
-
-//
-
 const url = './diamond.glb';
 // const url = './diamond-more.glb';
 
@@ -223,7 +212,11 @@ new GLTFLoader().load( url, (glb) => {
 
 			frontMesh.geometry.setAttribute( 'scale', new THREE.BufferAttribute( scale, 1 ) );
 
-			frontMesh.material = material;
+			frontMesh.material = new THREE.ShaderMaterial({
+				fragmentShader: shiftShaders.fragment,
+				vertexShader: shiftShaders.vertex,
+				transparent: true
+			});
 			
 			//
 
@@ -254,7 +247,7 @@ new GLTFLoader().load( url, (glb) => {
 				fragmentShader: gemFrontShaders.fragment,
 				uniforms: {
 					'u_shiftRT': { value: shiftingRenderTarget.texture },
-					'u_gemsBackRT': { value: gemsBackRenderTarget.texture },
+					'u_gemsBackRT': { value: gemsBackRenderTarget.texture }
 				}
 			});
 
@@ -393,11 +386,10 @@ function loop() {
 
 	});
 
-	// STEP 1 : Render image shifting information in a render target.
-	// this shifting is used to mimic refraction, and only applies
-	// to object in layer 1, the gems front faces.
+	// STEP 1 : Render image shifting information on a render target.
+	// this shifting is used to mimic refraction in the front faces shader.
 
-	// so that background data in refraction shader is empty
+	// background must be black or shifting will occur in empty areas.
 	scene.background = black;
 
 	camera.layers.disableAll();
