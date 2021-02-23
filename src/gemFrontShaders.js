@@ -43,16 +43,20 @@ fragment: `
 
 		vec3 shiftData = texture2D( u_shiftRT, vCoords ).xyz;
 
+		// get shifting direction according to face normal
 		vec2 shift = vec2( shiftData.x * 2.0 - 1.0, shiftData.y * 2.0 - 1.0 );
+
+		// scale according to gem size
 		shift *= shiftData.z * -0.06;
 
 		vec2 zoomedCoords = ( vCoords * gemSamplingZoom ) + ( cCoords * ( 1.0 - gemSamplingZoom ) );
 
 		vec2 uv = zoomedCoords + shift;
 
-		vec4 texel = texture2D( u_gemsBackRT, uv );
+		vec3 texel = texture2D( u_gemsBackRT, uv ).xyz;
 
-		gl_FragColor = texel;
+		gl_FragColor = vec4( texel, 1.0 );
+		// gl_FragColor = vec4( fract(uv.xy * 100.0), 0.0, 1.0 );
 	}
 `
 
