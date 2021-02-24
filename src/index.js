@@ -8,6 +8,7 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 import shiftShaders from './shiftShaders.js';
 import gemFrontShaders from './gemFrontShaders.js';
 import gemBackShaders from './gemBackShaders.js';
+import RenderTargetHelper from 'three-rt-helper';
 
 //
 
@@ -34,7 +35,7 @@ const shiftingRenderTarget = new THREE.WebGLRenderTarget(
 	{
 		minFilter: THREE.LinearFilter,
 		magFilter: THREE.NearestFilter,
-		format: THREE.RGBFormat
+		format: THREE.RGBAFormat
 	}
 );
 
@@ -44,9 +45,12 @@ const gemsBackRenderTarget = new THREE.WebGLRenderTarget(
 	{
 		minFilter: THREE.LinearFilter,
 		magFilter: THREE.NearestFilter,
-		format: THREE.RGBFormat
+		format: THREE.RGBAFormat
 	}
 );
+
+const renderTargetHelper = RenderTargetHelper( renderer, shiftingRenderTarget );
+document.body.append( renderTargetHelper );
 
 //
 
@@ -357,7 +361,6 @@ function onWindowResize() {
 	camera.updateProjectionMatrix();
 
 	renderer.setSize( window.innerWidth, window.innerHeight );
-	composer.setSize( window.innerWidth, window.innerHeight );
 
 }
 
@@ -402,7 +405,8 @@ function loop() {
 	renderer.render( scene, camera );
 
 	// STEP 2 : Render gemstones backfaces only, to be used later by the
-	// front faces material.
+	// front faces material. The gemstones are scaled down in the vertex
+	// shader, in order to avoid overlap as much as possible.
 
 	camera.layers.disableAll();
 	camera.layers.enable( 2 );
@@ -415,6 +419,9 @@ function loop() {
 	// displayed with a shader material using the two previous
 	// render targets.
 
+	// the gemstones backface color sampling is done according to the
+	// downscaling of the previous step
+
 	camera.layers.disableAll();
 	camera.layers.enable( 0 );
 	camera.layers.enable( 3 );
@@ -424,6 +431,8 @@ function loop() {
 	renderer.render( scene, camera );
 
 	//
+
+	renderTargetHelper.update();
 
 	controls.update();
 
