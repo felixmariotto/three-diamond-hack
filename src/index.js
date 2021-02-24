@@ -49,7 +49,7 @@ const gemsBackRenderTarget = new THREE.WebGLRenderTarget(
 	}
 );
 
-const renderTargetHelper = RenderTargetHelper( renderer, shiftingRenderTarget );
+const renderTargetHelper = RenderTargetHelper( renderer, gemsBackRenderTarget );
 document.body.append( renderTargetHelper );
 
 //

@@ -47,6 +47,18 @@ fragment: `
 		// scale according to gem size
 		shift *= shiftData.z * -0.06;
 
+		// scale towards the center of the view, see vertex gemBackShader
+		
+		vCoords = vPos.xy * 0.5;
+		vCoords /= vPos.w;
+		vCoords = vCoords * 0.5 + 0.5;
+
+		cCoords = cPos.xy * 0.5;
+		cCoords /= cPos.w;
+		cCoords = cCoords * 0.5 + 0.5;
+
+		//
+
 		vec2 zoomedCoords = ( vCoords * gemSamplingZoom ) + ( cCoords * ( 1.0 - gemSamplingZoom ) );
 
 		vec2 uv = zoomedCoords + shift;

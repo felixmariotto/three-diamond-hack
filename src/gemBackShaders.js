@@ -17,7 +17,13 @@ vertex: `
 		vec3 scaledPos = position + ( scaleDir * ( 1.0 - gemScale ) );
 
 		vec4 mvPosition = modelViewMatrix * vec4( scaledPos, 1.0 );
+
 		gl_Position = projectionMatrix * mvPosition;
+
+		// scale objects towards the center of the view
+		gl_Position.x *= 0.5;
+		gl_Position.y *= 0.5;
+		
 	}
 `,
 
