@@ -188,28 +188,20 @@ new GLTFLoader().load( url, (glb) => {
 
 				originIsland.vertices.forEach( (vertID) => {
 
-					newIsland.vertices = newIsland.vertices.concat( dummyToGeomIndex[vertID] );
+					newIsland.vertices.push( ...dummyToGeomIndex[vertID] );
 
 				});
 
-				frontMesh.geometry.islands.push( newIsland );
+				// reduce island objects size by computing ranges of vertices
+				// instead of storing every vertex id.
 
-			});
+				newIsland.ranges = [];
 
-			// reduce island objects size by computing ranges of vertices
-			// instead of storing every vertex id.
-
-			frontMesh.geometry.islands = frontMesh.geometry.islands.map( (island) => {
-
-				// create ranges
-
-				island.ranges = [];
-
-				island.vertices
+				newIsland.vertices
 				.sort( (a, b) => a - b )
 				.forEach( (vertID) => {
 
-					const rangeID = island.ranges.findIndex( (range) => {
+					const rangeID = newIsland.ranges.findIndex( (range) => {
 
 						if (
 							vertID + 1 >= range[ 0 ] &&
@@ -222,7 +214,7 @@ new GLTFLoader().load( url, (glb) => {
 
 					});
 
-					const range = island.ranges[ rangeID ];
+					const range = newIsland.ranges[ rangeID ];
 
 					if ( range ) {
 
@@ -232,21 +224,25 @@ new GLTFLoader().load( url, (glb) => {
 							range.unshift( vertID );
 						}
 
-						island.ranges[ rangeID ] = [ range[ 0 ], range[ range.length - 1 ] ];
+						newIsland.ranges[ rangeID ] = [ range[ 0 ], range[ range.length - 1 ] ];
 
 					} else {
 
-						island.ranges.push( [ vertID ] );
+						newIsland.ranges.push( [ vertID ] );
 
 					}
 
 				})
 
+				delete newIsland.vertices
+
 				//
 
-				return island
+				frontMesh.geometry.islands.push( newIsland );
 
 			});
+
+			console.time('create new attributes')
 
 			// add island center attribute
 
@@ -273,7 +269,7 @@ new GLTFLoader().load( url, (glb) => {
 
 			frontMesh.geometry.setAttribute( 'islandCenter', islandCenterAttrib );
 
-			//
+			// add island scale attribute
 
 			let scale = new Float32Array( posAttrib.count );
 
@@ -284,6 +280,8 @@ new GLTFLoader().load( url, (glb) => {
 				vertexShader: shiftShaders.vertex,
 				transparent: true
 			});
+
+			console.timeEnd('create new attributes')
 			
 			//
 
@@ -510,7 +508,15 @@ function computeIslandsScale( object ) {
 
 		const screenScale = island.boundingSphere.radius / distToSphere;
 
-		island.vertices.forEach( vertID => scaleAttrib.setX( vertID, screenScale ) );
+		island.ranges.forEach( (range) => {
+
+			for ( let i=range[0] ; i<=range[1]; i++ ) {
+
+				scaleAttrib.setX( i, screenScale );
+
+			}
+
+		});
 
 	});
 
