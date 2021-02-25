@@ -69,10 +69,13 @@ scene.add( sphere1 );
 
 //
 
-const url = './diamond.glb';
-// const url = './diamond-more.glb';
+// const url = './diamond.glb';
+const url = './diamond-more.glb';
+// const url = './diamonds-lots.glb';
 
 new GLTFLoader().load( url, (glb) => {
+
+	console.time('model preparation');
 
 	/*
 	glb.scene.traverse( (obj) => {
@@ -100,7 +103,9 @@ new GLTFLoader().load( url, (glb) => {
 			dummyGeom.deleteAttribute( 'normal' );
 			dummyGeom.deleteAttribute( 'uv' );
 
+			console.time('geometry parsing');
 			dummyGeom = parseGeometryIslands( dummyGeom );
+			console.timeEnd('geometry parsing');
 
 			frontMesh.geometry.computeBoundingBox();
 			const baseBB = frontMesh.geometry.boundingBox;
@@ -111,6 +116,7 @@ new GLTFLoader().load( url, (glb) => {
 
 			frontMesh.geometry.islands = [];
 
+			console.time('get islands');
 			// expand box 
 			dummyGeom.islands.forEach( (island) => {
 
@@ -141,11 +147,13 @@ new GLTFLoader().load( url, (glb) => {
 				// scene.add( helper );
 
 			});
+			console.timeEnd('get islands');
 
-			// create the islands in the real geometry
+			// create index to create the islands in the real geometry
 
 			const dummyToGeomIndex = [];
 
+			console.time('create islands index');
 			for ( let i=0 ; i<posAttrib.count ; i++ ) {
 
 				_vec.fromBufferAttribute( posAttrib, i );
@@ -154,7 +162,7 @@ new GLTFLoader().load( url, (glb) => {
 
 					_vec2.fromBufferAttribute( dummyGeom.attributes.position, j );
 
-					if ( _vec.distanceTo( _vec2 ) < 1e-4 ) {
+					if ( _vec.equals( _vec2 ) ) {
 
 						dummyToGeomIndex[ j ] = dummyToGeomIndex[ j ] || [];
 
@@ -165,6 +173,9 @@ new GLTFLoader().load( url, (glb) => {
 				}
 
 			}
+			console.timeEnd('create islands index');
+
+			// create the islands in the real geometry
 
 			frontMesh.geometry.islands = [];
 
@@ -185,30 +196,82 @@ new GLTFLoader().load( url, (glb) => {
 
 			});
 
+			// reduce island objects size by computing ranges of vertices
+			// instead of storing every vertex id.
+
+			frontMesh.geometry.islands = frontMesh.geometry.islands.map( (island) => {
+
+				// create ranges
+
+				island.ranges = [];
+
+				island.vertices
+				.sort( (a, b) => a - b )
+				.forEach( (vertID) => {
+
+					const rangeID = island.ranges.findIndex( (range) => {
+
+						if (
+							vertID + 1 >= range[ 0 ] &&
+							vertID - 1 <= range[ range.length - 1 ]
+						) {
+							return true
+						} else {
+							return false
+						}
+
+					});
+
+					const range = island.ranges[ rangeID ];
+
+					if ( range ) {
+
+						if ( vertID > range[ range.length - 1 ] ) {
+							range.push( vertID );
+						} else {
+							range.unshift( vertID );
+						}
+
+						island.ranges[ rangeID ] = [ range[ 0 ], range[ range.length - 1 ] ];
+
+					} else {
+
+						island.ranges.push( [ vertID ] );
+
+					}
+
+				})
+
+				//
+
+				return island
+
+			});
+
 			// add island center attribute
 
 			const islandCenterAttrib = new THREE.BufferAttribute( new Float32Array( posAttrib.count * 3 ), 3 )
 
 			frontMesh.geometry.islands.forEach( (island) => {
 
-				// console.log('island', island)
+				island.ranges.forEach( (range) => {
 
-				island.vertices.forEach( (vertID) => {
+					for ( let i=range[0]; i<=range[1] ; i++ ) {
 
-					islandCenterAttrib.setXYZ(
-						vertID,
-						island.boundingSphere.center.x,
-						island.boundingSphere.center.y,
-						island.boundingSphere.center.z
-					);
+						islandCenterAttrib.setXYZ(
+							i,
+							island.boundingSphere.center.x,
+							island.boundingSphere.center.y,
+							island.boundingSphere.center.z
+						);
 
-				});
+					}
+
+				})
 
 			});
 
 			frontMesh.geometry.setAttribute( 'islandCenter', islandCenterAttrib );
-
-			// console.log('geometry', frontMesh.geometry)
 
 			//
 
@@ -229,13 +292,6 @@ new GLTFLoader().load( url, (glb) => {
 			
 			backMesh.layers.set(2);
 			frontMesh2.layers.set(3);
-
-			/*
-			backMesh.material = new THREE.MeshBasicMaterial({
-				map: new THREE.TextureLoader().load('./map.jpg'),
-				side: THREE.BackSide
-			});
-			*/
 
 			backMesh.material = new THREE.ShaderMaterial({
 				vertexShader: gemBackShaders.vertex,
@@ -260,6 +316,8 @@ new GLTFLoader().load( url, (glb) => {
 		}
 
 	});
+
+	console.timeEnd('model preparation');
 
 });
 
