@@ -21,7 +21,9 @@ vertex: `
 `,
 
 fragment: `
+	#define scaleToCenter 0.65
 	#define gemSamplingZoom 0.15
+	#define shiftRatio -0.03
 
 	varying vec4 vPos;
 	varying vec4 cPos;
@@ -45,15 +47,15 @@ fragment: `
 		vec2 shift = vec2( shiftData.x * 2.0 - 1.0, shiftData.y * 2.0 - 1.0 );
 
 		// scale according to gem size
-		shift *= shiftData.z * -0.06;
+		shift *= shiftData.z * shiftRatio;
 
 		// scale towards the center of the view, see vertex gemBackShader
-		
-		vCoords = vPos.xy * 0.5;
+
+		vCoords = vPos.xy * scaleToCenter;
 		vCoords /= vPos.w;
 		vCoords = vCoords * 0.5 + 0.5;
 
-		cCoords = cPos.xy * 0.5;
+		cCoords = cPos.xy * scaleToCenter;
 		cCoords /= cPos.w;
 		cCoords = cCoords * 0.5 + 0.5;
 
@@ -63,10 +65,13 @@ fragment: `
 
 		vec2 uv = zoomedCoords + shift;
 
+		vec3 texel = texture2D( u_gemsBackRT, uv ).xyz;
+
+		/*
 		vec3 texel = texture2D( u_gemsBackRT, zoomedCoords ).xyz;
 		vec3 texel2 = texture2D( u_gemsBackRT, vCoords ).xyz;
-
 		texel = mix( texel, texel2, 0.5 );
+		*/
 
 		gl_FragColor = vec4( texel, 1.0 );
 		// gl_FragColor = vec4( fract(vCoords.xy * 100.0), 0.0, 1.0 );

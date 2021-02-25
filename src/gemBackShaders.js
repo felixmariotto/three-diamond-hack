@@ -2,6 +2,7 @@
 export default {
 
 vertex: `
+	#define scaleToCenter 0.65
 	#define gemScale 0.25
 
 	attribute vec3 islandCenter;
@@ -21,8 +22,8 @@ vertex: `
 		gl_Position = projectionMatrix * mvPosition;
 
 		// scale objects towards the center of the view
-		gl_Position.x *= 0.5;
-		gl_Position.y *= 0.5;
+		gl_Position.x *= scaleToCenter;
+		gl_Position.y *= scaleToCenter;
 		
 	}
 `,
