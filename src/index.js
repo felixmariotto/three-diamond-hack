@@ -154,6 +154,7 @@ new GLTFLoader().load( url, (glb) => {
 			const dummyToGeomIndex = [];
 
 			console.time('create islands index');
+
 			for ( let i=0 ; i<posAttrib.count ; i++ ) {
 
 				_vec.fromBufferAttribute( posAttrib, i );
@@ -173,6 +174,7 @@ new GLTFLoader().load( url, (glb) => {
 				}
 
 			}
+
 			console.timeEnd('create islands index');
 
 			// create the islands in the real geometry
